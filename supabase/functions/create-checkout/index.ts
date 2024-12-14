@@ -21,21 +21,53 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     );
 
+    // Get the session or user object
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabaseClient.auth.getUser(token);
+    const email = user?.email;
 
-    if (!user?.email) {
+    if (!email) {
       throw new Error('No email found');
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    console.log('Initializing Stripe...');
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      throw new Error('Stripe secret key not configured');
+    }
+
+    const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
     });
 
-    console.log('Creating payment session...');
+    // Check if customer exists
+    console.log('Checking for existing customer...');
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1
+    });
+
+    let customer_id = undefined;
+    if (customers.data.length > 0) {
+      customer_id = customers.data[0].id;
+      // Check if already subscribed to this price
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customers.data[0].id,
+        status: 'active',
+        price: priceId,
+        limit: 1
+      });
+
+      if (subscriptions.data.length > 0) {
+        throw new Error('Customer already has an active subscription for this plan');
+      }
+    }
+
+    console.log('Creating checkout session...');
     const session = await stripe.checkout.sessions.create({
-      customer_email: user.email,
+      customer: customer_id,
+      customer_email: customer_id ? undefined : email,
       line_items: [
         {
           price: priceId,
