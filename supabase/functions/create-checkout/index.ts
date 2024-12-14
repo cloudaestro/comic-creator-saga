@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,13 +26,14 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser(token);
 
     if (!user?.email) {
-      throw new Error('User not found');
+      throw new Error('No email found');
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
+    console.log('Creating payment session...');
     const session = await stripe.checkout.sessions.create({
       customer_email: user.email,
       line_items: [
@@ -45,6 +47,7 @@ serve(async (req) => {
       cancel_url: `${req.headers.get('origin')}/pricing`,
     });
 
+    console.log('Payment session created:', session.id);
     return new Response(
       JSON.stringify({ url: session.url }),
       { 
@@ -53,6 +56,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error('Error creating payment session:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
