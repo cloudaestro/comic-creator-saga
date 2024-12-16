@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusCircle, ArrowLeft, Save, Trash2, MoveUp, MoveDown } from "lucide-react";
+import { PlusCircle, ArrowLeft, Save, Trash2, MoveUp, MoveDown, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -21,8 +21,10 @@ const ComicCreator = () => {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [script, setScript] = useState("");
   const [panels, setPanels] = useState<Panel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -103,6 +105,46 @@ const ComicCreator = () => {
     setIsLoading(false);
   };
 
+  const processScript = async () => {
+    if (!script.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a script to process",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('process-comic-script', {
+        body: { script }
+      });
+
+      if (error) throw error;
+
+      setPanels(data.panels.map((panel: any) => ({
+        image_url: panel.image_url,
+        sequence_number: panel.sequence_number,
+        text_content: panel.dialogues.join('\n')
+      })));
+
+      toast({
+        title: "Success",
+        description: "Script processed successfully",
+      });
+    } catch (error) {
+      console.error('Error processing script:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process script",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!title) {
       toast({
@@ -140,7 +182,7 @@ const ComicCreator = () => {
           .insert({
             title,
             description,
-            user_id: user.id // Add the user_id here
+            user_id: user.id
           })
           .select()
           .single();
@@ -248,8 +290,24 @@ const ComicCreator = () => {
             placeholder="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="h-24"
+            className="h-24 mb-4"
           />
+          <div className="flex gap-4 items-start">
+            <Textarea
+              placeholder="Enter your comic script here..."
+              value={script}
+              onChange={(e) => setScript(e.target.value)}
+              className="h-48"
+            />
+            <Button
+              onClick={processScript}
+              disabled={isProcessing}
+              className="gap-2"
+            >
+              <Wand2 className="h-5 w-5" />
+              {isProcessing ? "Processing..." : "Generate Panels"}
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-6">
