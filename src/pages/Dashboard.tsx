@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { PlusCircle, Edit, Trash2, Star, Archive, MessageSquare, Search, Settings, HelpCircle, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface Comic {
   id: string;
@@ -59,59 +62,146 @@ const Dashboard = () => {
     fetchComics();
   };
 
+  const menuItems = [
+    { icon: MessageSquare, label: "Chats", count: comics.length },
+    { icon: Search, label: "Search", shortcut: "⌘F" },
+    { icon: CreditCard, label: "Manage subscription" },
+    { icon: HelpCircle, label: "Updates & FAQ" },
+    { icon: Settings, label: "Settings" },
+  ];
+
+  const lists = [
+    { icon: MessageSquare, label: "Welcome", count: 48 },
+    { icon: Star, label: "Favorites", count: 8 },
+    { icon: Archive, label: "Archived", count: 128 },
+  ];
+
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">My Comics</h1>
-        <Button onClick={() => navigate("/create")} className="gap-2">
-          <PlusCircle className="h-5 w-5" />
-          Create New Comic
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {comics.map((comic) => (
-          <Card key={comic.id} className="flex flex-col">
-            <CardHeader>
-              <CardTitle>{comic.title}</CardTitle>
-              <CardDescription>{comic.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <p className="text-sm text-gray-500">
-                Created on {new Date(comic.created_at).toLocaleDateString()}
-              </p>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigate(`/edit/${comic.id}`)}
-              >
-                <Edit className="h-4 w-4" />
+    <SidebarProvider defaultOpen>
+      <div className="flex min-h-screen w-full bg-background">
+        <Sidebar>
+          <SidebarHeader className="border-b border-sidebar-border px-2">
+            <div className="flex items-center gap-2 px-2 py-4">
+              <div className="h-8 w-8 rounded-lg bg-primary" />
+              <div className="flex-1">
+                <h3 className="font-semibold">Comic Creator</h3>
+                <p className="text-xs text-muted-foreground">AI-Powered Comics</p>
+              </div>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarMenu>
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton className="w-full justify-between">
+                      <span className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </span>
+                      {item.count !== undefined && (
+                        <span className="text-xs text-muted-foreground">{item.count}</span>
+                      )}
+                      {item.shortcut && (
+                        <kbd className="pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+                          <span className="text-xs">{item.shortcut}</span>
+                        </kbd>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Lists</SidebarGroupLabel>
+              <SidebarMenu>
+                {lists.map((item) => (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton className="w-full justify-between">
+                      <span className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </span>
+                      {item.count && (
+                        <span className="text-xs text-muted-foreground">{item.count}</span>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter className="border-t border-sidebar-border p-4">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-muted" />
+              <div className="flex-1 text-sm">
+                <p className="font-medium">User</p>
+                <p className="text-xs text-muted-foreground">user@example.com</p>
+              </div>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+        <main className="flex-1 overflow-auto">
+          <div className="container mx-auto py-8">
+            <div className="mb-8 flex items-center justify-between">
+              <h1 className="text-4xl font-bold">My Comics</h1>
+              <Button onClick={() => navigate("/create")} className="gap-2">
+                <PlusCircle className="h-5 w-5" />
+                Create New Comic
               </Button>
-              <Button
-                variant="destructive"
-                size="icon"
-                onClick={() => handleDelete(comic.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+            </div>
 
-      {comics.length === 0 && (
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold mb-4">No Comics Yet</h2>
-          <p className="text-gray-500 mb-6">Create your first comic to get started!</p>
-          <Button onClick={() => navigate("/create")} className="gap-2">
-            <PlusCircle className="h-5 w-5" />
-            Create New Comic
-          </Button>
-        </div>
-      )}
-    </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {comics.map((comic) => (
+                <Card key={comic.id} className={cn(
+                  "flex flex-col overflow-hidden transition-all hover:shadow-lg",
+                  "dark:bg-sidebar dark:hover:bg-sidebar-accent"
+                )}>
+                  <div className="flex flex-col space-y-1.5 p-6">
+                    <h3 className="text-2xl font-semibold">{comic.title}</h3>
+                    <p className="text-sm text-muted-foreground">{comic.description}</p>
+                  </div>
+                  <div className="flex-grow p-6 pt-0">
+                    <p className="text-sm text-muted-foreground">
+                      Created on {new Date(comic.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 border-t p-4 dark:border-sidebar-border">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigate(`/edit/${comic.id}`)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(comic.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {comics.length === 0 && (
+              <div className="py-12 text-center">
+                <h2 className="mb-4 text-2xl font-semibold">No Comics Yet</h2>
+                <p className="mb-6 text-muted-foreground">
+                  Create your first comic to get started!
+                </p>
+                <Button onClick={() => navigate("/create")} className="gap-2">
+                  <PlusCircle className="h-5 w-5" />
+                  Create New Comic
+                </Button>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
 
