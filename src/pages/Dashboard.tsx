@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { PlusCircle, Edit, Trash2, Star, Archive, MessageSquare, Search, Settings, HelpCircle, CreditCard } from "lucide-react";
+import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 
 interface Comic {
   id: string;
@@ -22,9 +23,13 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const fetchComics = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data, error } = await supabase
       .from("comics")
       .select("*")
+      .eq('user_id', user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -62,20 +67,6 @@ const Dashboard = () => {
     fetchComics();
   };
 
-  const menuItems = [
-    { icon: MessageSquare, label: "Chats", count: comics.length },
-    { icon: Search, label: "Search", shortcut: "⌘F" },
-    { icon: CreditCard, label: "Manage subscription" },
-    { icon: HelpCircle, label: "Updates & FAQ" },
-    { icon: Settings, label: "Settings" },
-  ];
-
-  const lists = [
-    { icon: MessageSquare, label: "Welcome", count: 48 },
-    { icon: Star, label: "Favorites", count: 8 },
-    { icon: Archive, label: "Archived", count: 128 },
-  ];
-
   return (
     <SidebarProvider defaultOpen>
       <div className="flex min-h-screen w-full bg-background">
@@ -90,55 +81,10 @@ const Dashboard = () => {
             </div>
           </SidebarHeader>
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarMenu>
-                {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton className="w-full justify-between">
-                      <span className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </span>
-                      {item.count !== undefined && (
-                        <span className="text-xs text-muted-foreground">{item.count}</span>
-                      )}
-                      {item.shortcut && (
-                        <kbd className="pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-                          <span className="text-xs">{item.shortcut}</span>
-                        </kbd>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupLabel>Lists</SidebarGroupLabel>
-              <SidebarMenu>
-                {lists.map((item) => (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton className="w-full justify-between">
-                      <span className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </span>
-                      {item.count && (
-                        <span className="text-xs text-muted-foreground">{item.count}</span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
+            <DashboardSidebar />
           </SidebarContent>
           <SidebarFooter className="border-t border-sidebar-border p-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-muted" />
-              <div className="flex-1 text-sm">
-                <p className="font-medium">User</p>
-                <p className="text-xs text-muted-foreground">user@example.com</p>
-              </div>
-            </div>
+            <UserProfile />
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1 overflow-auto">
