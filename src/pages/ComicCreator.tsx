@@ -125,6 +125,13 @@ const ComicCreator = () => {
     setIsLoading(true);
 
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
       let comicId = id;
 
       if (!comicId) {
@@ -133,6 +140,7 @@ const ComicCreator = () => {
           .insert({
             title,
             description,
+            user_id: user.id // Add the user_id here
           })
           .select()
           .single();
