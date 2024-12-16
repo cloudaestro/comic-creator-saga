@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,15 +26,43 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a comic script analyzer. Extract scenes, characters, and dialogues from the script. Format the response as JSON with the following structure: { scenes: [{ description, characters: [], dialogues: [] }] }'
+            content: `You are a comic script analyzer. Your task is to break down the script into scenes with characters and dialogues.
+            You must respond with a valid JSON object in the following format exactly:
+            {
+              "scenes": [
+                {
+                  "description": "Brief scene description",
+                  "characters": ["Character1", "Character2"],
+                  "dialogues": ["Character1: Hello", "Character2: Hi"]
+                }
+              ]
+            }
+            Do not include any explanations or additional text, only the JSON object.`
           },
           { role: 'user', content: script }
         ],
+        temperature: 0.7,
       }),
     })
 
-    const scriptAnalysis = await scriptAnalysisResponse.json()
-    const scenes = JSON.parse(scriptAnalysis.choices[0].message.content)
+    if (!scriptAnalysisResponse.ok) {
+      throw new Error(`OpenAI API error: ${scriptAnalysisResponse.statusText}`);
+    }
+
+    const scriptAnalysisData = await scriptAnalysisResponse.json()
+    const gptResponse = scriptAnalysisData.choices[0].message.content;
+    
+    // Validate JSON response
+    let scenes;
+    try {
+      scenes = JSON.parse(gptResponse);
+      if (!scenes.scenes || !Array.isArray(scenes.scenes)) {
+        throw new Error('Invalid response format from GPT');
+      }
+    } catch (error) {
+      console.error('GPT response parsing error:', gptResponse);
+      throw new Error('Failed to parse GPT response as JSON');
+    }
 
     // Generate images for each scene with DALL-E
     const panelsPromises = scenes.scenes.map(async (scene: any, index: number) => {
@@ -51,6 +79,10 @@ serve(async (req) => {
           size: "1024x1024",
         }),
       })
+
+      if (!imageResponse.ok) {
+        throw new Error(`DALL-E API error: ${imageResponse.statusText}`);
+      }
 
       const imageData = await imageResponse.json()
       return {
@@ -69,8 +101,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing comic script:', error)
     return new Response(
-      JSON.stringify({ error: `Error generating comic: ${error.message}` }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ error: `Error processing comic script: ${error.message}` }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     )
   }
 })
