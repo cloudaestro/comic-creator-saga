@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { script } = await req.json()
+    const { script, numPanels, style } = await req.json()
     
     // Process script with GPT-4
     const scriptAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -26,7 +26,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a comic script analyzer. Your task is to break down the script into scenes with characters and dialogues.
+            content: `You are a comic script analyzer. Your task is to break down the script into exactly ${numPanels} scenes with characters and dialogues.
             You must respond with a valid JSON object in the following format exactly:
             {
               "scenes": [
@@ -74,7 +74,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "dall-e-3",
-          prompt: `Create a comic panel for the following scene: ${scene.description}. Include characters: ${scene.characters.join(', ')}. Style: comic book art, clear and detailed.`,
+          prompt: `Create a ${style}-style comic panel for the following scene: ${scene.description}. Include characters: ${scene.characters.join(', ')}. Style: ${style} comic art, clear and detailed, maintaining consistent character designs and art style throughout the series.`,
           n: 1,
           size: "1024x1024",
         }),

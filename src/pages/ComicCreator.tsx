@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusCircle, ArrowLeft, Save, Trash2, MoveUp, MoveDown, Wand2 } from "lucide-react";
+import { PlusCircle, ArrowLeft, Save, Trash2, MoveUp, MoveDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { ScriptConfig } from "@/components/comic-creator/ScriptConfig";
 
 interface Panel {
   id?: string;
@@ -21,7 +22,6 @@ const ComicCreator = () => {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [script, setScript] = useState("");
   const [panels, setPanels] = useState<Panel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -105,7 +105,7 @@ const ComicCreator = () => {
     setIsLoading(false);
   };
 
-  const processScript = async () => {
+  const processScript = async ({ script, numPanels, style }: { script: string; numPanels: number; style: string }) => {
     if (!script.trim()) {
       toast({
         title: "Error",
@@ -118,7 +118,7 @@ const ComicCreator = () => {
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('process-comic-script', {
-        body: { script }
+        body: { script, numPanels, style }
       });
 
       if (error) throw error;
@@ -167,7 +167,6 @@ const ComicCreator = () => {
     setIsLoading(true);
 
     try {
-      // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -201,12 +200,10 @@ const ComicCreator = () => {
         if (updateError) throw updateError;
       }
 
-      // Delete existing panels if editing
       if (id) {
         await supabase.from("panels").delete().eq("comic_id", id);
       }
 
-      // Insert new panels
       const { error: panelsError } = await supabase.from("panels").insert(
         panels.map((panel, index) => ({
           comic_id: comicId,
@@ -292,22 +289,7 @@ const ComicCreator = () => {
             onChange={(e) => setDescription(e.target.value)}
             className="h-24 mb-4"
           />
-          <div className="flex gap-4 items-start">
-            <Textarea
-              placeholder="Enter your comic script here..."
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              className="h-48"
-            />
-            <Button
-              onClick={processScript}
-              disabled={isProcessing}
-              className="gap-2"
-            >
-              <Wand2 className="h-5 w-5" />
-              {isProcessing ? "Processing..." : "Generate Panels"}
-            </Button>
-          </div>
+          <ScriptConfig onProcess={processScript} isProcessing={isProcessing} />
         </div>
 
         <div className="space-y-6">
