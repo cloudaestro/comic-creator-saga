@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      comics: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      panels: {
+        Row: {
+          comic_id: string
+          created_at: string
+          id: string
+          image_url: string
+          sequence_number: number
+          text_content: string | null
+          updated_at: string
+        }
+        Insert: {
+          comic_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          sequence_number: number
+          text_content?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comic_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          sequence_number?: number
+          text_content?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panels_comic_id_fkey"
+            columns: ["comic_id"]
+            isOneToOne: false
+            referencedRelation: "comics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
