@@ -41,7 +41,7 @@ export const CommentSection = ({ comicId, isPublic }: CommentSectionProps) => {
         id,
         content,
         created_at,
-        profiles:profiles(
+        profiles (
           username,
           avatar_url
         )

@@ -7,6 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -78,33 +80,60 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Generate and save images for each scene
+    // Generate and save images for each scene with retry logic
     const panelsPromises = scenes.scenes.map(async (scene: any, index: number) => {
       console.log(`Generating image for scene ${index + 1}:`, scene);
       
-      // Generate image with DALL-E
-      const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "dall-e-3",
-          prompt: `Create a ${style}-style comic panel for the following scene: ${scene.description}. Include characters: ${scene.characters.join(', ')}. Style: ${style} comic art, clear and detailed, maintaining consistent character designs and art style throughout the series.`,
-          n: 1,
-          size: "1024x1024",
-        }),
-      })
+      let retries = 3;
+      let imageUrl;
+      
+      while (retries > 0) {
+        try {
+          // Generate image with DALL-E
+          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: "dall-e-3",
+              prompt: `Create a ${style}-style comic panel for the following scene: ${scene.description}. Include characters: ${scene.characters.join(', ')}. Style: ${style} comic art, clear and detailed, maintaining consistent character designs and art style throughout the series.`,
+              n: 1,
+              size: "1024x1024",
+            }),
+          })
 
-      if (!imageResponse.ok) {
-        console.error('DALL-E API error:', await imageResponse.text());
-        throw new Error(`DALL-E API error: ${imageResponse.statusText}`);
+          if (!imageResponse.ok) {
+            const errorText = await imageResponse.text();
+            console.error('DALL-E API error:', errorText);
+            
+            if (imageResponse.status === 429) { // Rate limit error
+              console.log(`Rate limit hit, waiting before retry. Attempts left: ${retries-1}`);
+              await delay(2000); // Wait 2 seconds before retrying
+              retries--;
+              continue;
+            }
+            
+            throw new Error(`DALL-E API error: ${imageResponse.statusText}`);
+          }
+
+          const imageData = await imageResponse.json()
+          imageUrl = imageData.data[0].url;
+          console.log(`Generated image URL for scene ${index + 1}:`, imageUrl);
+          break; // Success, exit retry loop
+          
+        } catch (error) {
+          console.error(`Error generating image, attempts left: ${retries-1}:`, error);
+          if (retries <= 1) throw error;
+          retries--;
+          await delay(2000);
+        }
       }
 
-      const imageData = await imageResponse.json()
-      const imageUrl = imageData.data[0].url;
-      console.log(`Generated image URL for scene ${index + 1}:`, imageUrl);
+      if (!imageUrl) {
+        throw new Error('Failed to generate image after all retries');
+      }
 
       // Download the image
       const imageDownloadResponse = await fetch(imageUrl);
