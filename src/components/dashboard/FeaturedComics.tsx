@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Comic } from "@/types/comic";
 import { ComicCard } from "./ComicCard";
 import { useToast } from "@/components/ui/use-toast";
+import { useEffect } from "react";
 
 const fetchPublicComics = async () => {
   const { data, error } = await supabase
@@ -10,11 +11,9 @@ const fetchPublicComics = async () => {
     .select(`
       *,
       panels (*),
-      user:user_id (
-        profiles (
-          username,
-          avatar_url
-        )
+      profiles!comics_user_id_fkey (
+        username,
+        avatar_url
       )
     `)
     .eq('is_public', true)
@@ -36,14 +35,16 @@ export const FeaturedComics = () => {
     queryFn: fetchPublicComics,
   });
 
-  if (error) {
-    console.error('Error in FeaturedComics:', error);
-    toast({
-      title: "Error",
-      description: "Failed to load featured comics",
-      variant: "destructive",
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      console.error('Error in FeaturedComics:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load featured comics",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const handleViewComic = (comic: Comic) => {
     // This will be handled by the parent component
