@@ -13,6 +13,8 @@ interface Comic {
   title: string;
   description: string;
   created_at: string;
+  is_public: boolean;
+  user_id: string;
   panels: Panel[];
 }
 

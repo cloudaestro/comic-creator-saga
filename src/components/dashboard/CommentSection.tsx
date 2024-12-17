@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,12 @@ export const CommentSection = ({ comicId, isPublic }: CommentSectionProps) => {
   const [newComment, setNewComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isPublic) {
+      fetchComments();
+    }
+  }, [comicId, isPublic]);
 
   const fetchComments = async () => {
     const { data, error } = await supabase
@@ -60,9 +66,22 @@ export const CommentSection = ({ comicId, isPublic }: CommentSectionProps) => {
     if (!newComment.trim()) return;
 
     setIsLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to comment",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from("comments").insert({
       comic_id: comicId,
       content: newComment.trim(),
+      user_id: user.id,
     });
 
     if (error) {
