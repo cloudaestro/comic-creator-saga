@@ -1,20 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusCircle, ArrowLeft, Save, Wand2 } from "lucide-react";
+import { PlusCircle, ArrowLeft, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { ScriptConfig } from "@/components/comic-creator/ScriptConfig";
 import { ComicHeader } from "@/components/comic-creator/ComicHeader";
 import { PanelList } from "@/components/comic-creator/PanelList";
-
-interface Panel {
-  id?: string;
-  image_url: string;
-  sequence_number: number;
-  text_content: string;
-}
+import { ComicActions } from "@/components/comic-creator/ComicActions";
 
 const ComicCreator = () => {
   const { id } = useParams();
@@ -22,7 +16,7 @@ const ComicCreator = () => {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [panels, setPanels] = useState<Panel[]>([]);
+  const [panels, setPanels] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
