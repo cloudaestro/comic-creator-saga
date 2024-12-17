@@ -15,6 +15,8 @@ serve(async (req) => {
   try {
     const { script, numPanels, style } = await req.json()
     
+    console.log('Processing script:', { script, numPanels, style });
+    
     // Process script with GPT-4
     const scriptAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -23,22 +25,22 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: `You are a comic script analyzer. Your task is to break down the script into exactly ${numPanels} scenes with characters and dialogues.
-            You must respond with a valid JSON object in the following format exactly:
+            content: `You are a comic script analyzer. Break down the script into exactly ${numPanels} scenes with characters and dialogues.
+            You must respond with a valid JSON object in this exact format, with no additional text or explanation:
             {
               "scenes": [
                 {
-                  "description": "Brief scene description",
-                  "characters": ["Character1", "Character2"],
-                  "dialogues": ["Character1: Hello", "Character2: Hi"]
+                  "description": "string describing the scene",
+                  "characters": ["array of character names"],
+                  "dialogues": ["array of dialogue lines"]
                 }
               ]
             }
-            Do not include any explanations or additional text, only the JSON object.`
+            The response must be pure JSON, no markdown, no text before or after. Ensure all strings are properly escaped.`
           },
           { role: 'user', content: script }
         ],
@@ -47,17 +49,22 @@ serve(async (req) => {
     })
 
     if (!scriptAnalysisResponse.ok) {
+      console.error('OpenAI API error:', await scriptAnalysisResponse.text());
       throw new Error(`OpenAI API error: ${scriptAnalysisResponse.statusText}`);
     }
 
     const scriptAnalysisData = await scriptAnalysisResponse.json()
+    console.log('GPT Response:', scriptAnalysisData);
+    
     const gptResponse = scriptAnalysisData.choices[0].message.content;
+    console.log('GPT Content:', gptResponse);
     
     // Validate JSON response
     let scenes;
     try {
       scenes = JSON.parse(gptResponse);
       if (!scenes.scenes || !Array.isArray(scenes.scenes)) {
+        console.error('Invalid response format:', scenes);
         throw new Error('Invalid response format from GPT');
       }
     } catch (error) {
@@ -73,6 +80,8 @@ serve(async (req) => {
 
     // Generate and save images for each scene
     const panelsPromises = scenes.scenes.map(async (scene: any, index: number) => {
+      console.log(`Generating image for scene ${index + 1}:`, scene);
+      
       // Generate image with DALL-E
       const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
@@ -89,11 +98,13 @@ serve(async (req) => {
       })
 
       if (!imageResponse.ok) {
+        console.error('DALL-E API error:', await imageResponse.text());
         throw new Error(`DALL-E API error: ${imageResponse.statusText}`);
       }
 
       const imageData = await imageResponse.json()
       const imageUrl = imageData.data[0].url;
+      console.log(`Generated image URL for scene ${index + 1}:`, imageUrl);
 
       // Download the image
       const imageDownloadResponse = await fetch(imageUrl);
@@ -116,8 +127,11 @@ serve(async (req) => {
         });
 
       if (uploadError) {
+        console.error('Storage upload error:', uploadError);
         throw new Error(`Failed to upload image: ${uploadError.message}`);
       }
+
+      console.log(`Successfully uploaded image ${filename} to storage`);
 
       // Get the public URL
       const { data: { publicUrl } } = supabase.storage
@@ -132,6 +146,7 @@ serve(async (req) => {
     })
 
     const panels = await Promise.all(panelsPromises)
+    console.log('Successfully processed all panels:', panels);
 
     return new Response(
       JSON.stringify({ panels }),
