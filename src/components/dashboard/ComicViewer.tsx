@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CommentSection } from "./CommentSection";
+import { CommentSection } from "./comments/CommentSection";
 
 interface Panel {
   id: string;
