@@ -20,9 +20,25 @@ export const CommentForm = ({ comicId, onCommentAdded }: CommentFormProps) => {
 
     setIsSubmitting(true);
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to comment",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("comments")
-        .insert({ comic_id: comicId, content });
+        .insert({ 
+          comic_id: comicId, 
+          content: content.trim(),
+          user_id: user.id 
+        });
 
       if (error) throw error;
 
