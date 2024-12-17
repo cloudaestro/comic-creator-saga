@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusCircle, ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { ScriptConfig } from "@/components/comic-creator/ScriptConfig";
@@ -10,13 +10,20 @@ import { ComicHeader } from "@/components/comic-creator/ComicHeader";
 import { PanelList } from "@/components/comic-creator/PanelList";
 import { ComicActions } from "@/components/comic-creator/ComicActions";
 
+interface Panel {
+  id?: string;
+  image_url: string;
+  sequence_number: number;
+  text_content: string;
+}
+
 const ComicCreator = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [panels, setPanels] = useState([]);
+  const [panels, setPanels] = useState<Panel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -99,7 +106,17 @@ const ComicCreator = () => {
     setIsLoading(false);
   };
 
-  const processScript = async ({ script, numPanels, style }: { script: string; numPanels: number; style: string }) => {
+  const processScript = async ({ 
+    script, 
+    numPanels, 
+    style,
+    aspectRatio 
+  }: { 
+    script: string; 
+    numPanels: number; 
+    style: string;
+    aspectRatio: "square" | "landscape" | "portrait";
+  }) => {
     if (!script.trim()) {
       toast({
         title: "Error",
@@ -112,7 +129,7 @@ const ComicCreator = () => {
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('process-comic-script', {
-        body: { script, numPanels, style }
+        body: { script, numPanels, style, aspectRatio }
       });
 
       if (error) throw error;
@@ -268,21 +285,12 @@ const ComicCreator = () => {
           onImageUpload={handleImageUpload}
         />
 
-        <div className="flex gap-4">
-          <Button onClick={addPanel} className="gap-2">
-            <PlusCircle className="h-5 w-5" />
-            Add Panel
-          </Button>
-          <Button 
-            variant="default"
-            onClick={handleSave} 
-            disabled={isLoading} 
-            className="gap-2"
-          >
-            <Save className="h-5 w-5" />
-            {isLoading ? "Saving..." : "Save Comic"}
-          </Button>
-        </div>
+        <ComicActions
+          onSave={handleSave}
+          onGenerate={() => {}}
+          isLoading={isLoading}
+          isProcessing={isProcessing}
+        />
       </div>
     </div>
   );
