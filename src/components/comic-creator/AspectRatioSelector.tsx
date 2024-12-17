@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Square, Smartphone, LayoutLandscape } from "lucide-react";
+import { Square, Smartphone, Layout } from "lucide-react";
 
 interface AspectRatioSelectorProps {
   value: "square" | "landscape" | "portrait";
@@ -29,7 +29,7 @@ export const AspectRatioSelector = ({
           className="flex-1 flex-col gap-2 h-auto py-3"
           onClick={() => onChange("landscape")}
         >
-          <LayoutLandscape className="h-6 w-6" />
+          <Layout className="h-6 w-6" />
           <span className="text-xs">Landscape</span>
         </Button>
         <Button
