@@ -11,6 +11,7 @@ import { Comic } from "@/types/comic";
 
 const Dashboard = () => {
   const [comics, setComics] = useState<Comic[]>([]);
+  const [filteredComics, setFilteredComics] = useState<Comic[]>([]);
   const [selectedComic, setSelectedComic] = useState<Comic | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +41,7 @@ const Dashboard = () => {
       }));
 
       setComics(processedComics || []);
+      setFilteredComics(processedComics || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -55,6 +57,20 @@ const Dashboard = () => {
   useEffect(() => {
     fetchComics();
   }, []);
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) {
+      setFilteredComics(comics);
+      return;
+    }
+
+    const searchTerm = query.toLowerCase();
+    const filtered = comics.filter(comic => 
+      comic.title.toLowerCase().includes(searchTerm) ||
+      (comic.description?.toLowerCase().includes(searchTerm))
+    );
+    setFilteredComics(filtered);
+  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -103,9 +119,9 @@ const Dashboard = () => {
 
         <main className="flex-1 overflow-auto">
           <div className="container mx-auto py-8">
-            <DashboardHeader />
+            <DashboardHeader onSearch={handleSearch} />
             <ComicGrid
-              comics={comics}
+              comics={filteredComics}
               isLoading={isLoading}
               onViewComic={handleViewComic}
               onDeleteComic={handleDelete}
