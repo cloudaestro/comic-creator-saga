@@ -10,25 +10,40 @@ const fetchPublicComics = async () => {
     .select(`
       *,
       panels (*),
-      profiles (
-        username,
-        avatar_url
+      user:user_id (
+        profiles (
+          username,
+          avatar_url
+        )
       )
     `)
     .eq('is_public', true)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  console.log('Fetched public comics:', data); // Added for debugging
+  if (error) {
+    console.error('Error fetching public comics:', error);
+    throw error;
+  }
+  
+  console.log('Fetched public comics:', data);
   return data as Comic[];
 };
 
 export const FeaturedComics = () => {
   const { toast } = useToast();
-  const { data: comics, isLoading } = useQuery({
+  const { data: comics, isLoading, error } = useQuery({
     queryKey: ['public-comics'],
     queryFn: fetchPublicComics,
   });
+
+  if (error) {
+    console.error('Error in FeaturedComics:', error);
+    toast({
+      title: "Error",
+      description: "Failed to load featured comics",
+      variant: "destructive",
+    });
+  }
 
   const handleViewComic = (comic: Comic) => {
     // This will be handled by the parent component
@@ -59,8 +74,6 @@ export const FeaturedComics = () => {
       </div>
     );
   }
-
-  console.log('Rendering comics:', comics); // Added for debugging
 
   return (
     <div className="space-y-4">
