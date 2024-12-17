@@ -11,7 +11,7 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
-  user: {
+  profiles: {
     username: string | null;
     avatar_url: string | null;
   };
@@ -54,12 +54,7 @@ export const CommentSection = ({ comicId, isPublic }: CommentSectionProps) => {
       return;
     }
 
-    setComments(
-      data.map((comment) => ({
-        ...comment,
-        user: comment.profiles,
-      }))
-    );
+    setComments(data as Comment[]);
   };
 
   const handleSubmitComment = async () => {
@@ -133,15 +128,15 @@ export const CommentSection = ({ comicId, isPublic }: CommentSectionProps) => {
           {comments.map((comment) => (
             <div key={comment.id} className="flex gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={comment.user.avatar_url || undefined} />
+                <AvatarImage src={comment.profiles.avatar_url || undefined} />
                 <AvatarFallback>
-                  {comment.user.username?.[0]?.toUpperCase() || "U"}
+                  {comment.profiles.username?.[0]?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">
-                    {comment.user.username || "Anonymous"}
+                    {comment.profiles.username || "Anonymous"}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {new Date(comment.created_at).toLocaleDateString()}
