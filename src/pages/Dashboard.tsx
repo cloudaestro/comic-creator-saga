@@ -104,7 +104,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-2 px-2 py-4">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80" />
               <div className="flex-1">
-                <h3 className="font-semibold">Comic Creator</h3>
+                <h3 className="font-semibold">Comic Weaver</h3>
                 <p className="text-xs text-muted-foreground">AI-Powered Comics</p>
               </div>
             </div>
