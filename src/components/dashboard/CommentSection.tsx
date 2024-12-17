@@ -41,7 +41,7 @@ export const CommentSection = ({ comicId, isPublic }: CommentSectionProps) => {
         id,
         content,
         created_at,
-        profiles (
+        profiles!user_id (
           username,
           avatar_url
         )
@@ -54,7 +54,9 @@ export const CommentSection = ({ comicId, isPublic }: CommentSectionProps) => {
       return;
     }
 
-    setComments(data as Comment[]);
+    if (data) {
+      setComments(data as Comment[]);
+    }
   };
 
   const handleSubmitComment = async () => {
