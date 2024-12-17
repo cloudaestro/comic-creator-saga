@@ -7,6 +7,7 @@ import { UserProfile } from "@/components/dashboard/UserProfile";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ComicGrid } from "@/components/dashboard/ComicGrid";
 import { ComicViewer } from "@/components/dashboard/ComicViewer";
+import { FeaturedComics } from "@/components/dashboard/FeaturedComics";
 import { Comic } from "@/types/comic";
 
 const Dashboard = () => {
@@ -118,14 +119,22 @@ const Dashboard = () => {
         </Sidebar>
 
         <main className="flex-1 overflow-auto">
-          <div className="container mx-auto py-8">
+          <div className="container mx-auto space-y-8 py-8">
             <DashboardHeader onSearch={handleSearch} />
-            <ComicGrid
-              comics={filteredComics}
-              isLoading={isLoading}
-              onViewComic={handleViewComic}
-              onDeleteComic={handleDelete}
-            />
+            <div className="space-y-12">
+              <section>
+                <h2 className="mb-6 text-2xl font-semibold">My Comics</h2>
+                <ComicGrid
+                  comics={filteredComics}
+                  isLoading={isLoading}
+                  onViewComic={handleViewComic}
+                  onDeleteComic={handleDelete}
+                />
+              </section>
+              <section>
+                <FeaturedComics />
+              </section>
+            </div>
           </div>
         </main>
 
