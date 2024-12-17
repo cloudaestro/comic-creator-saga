@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,7 +23,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
@@ -64,8 +65,15 @@ serve(async (req) => {
       throw new Error('Failed to parse GPT response as JSON');
     }
 
-    // Generate images for each scene with DALL-E
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Generate and save images for each scene
     const panelsPromises = scenes.scenes.map(async (scene: any, index: number) => {
+      // Generate image with DALL-E
       const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
@@ -85,9 +93,40 @@ serve(async (req) => {
       }
 
       const imageData = await imageResponse.json()
+      const imageUrl = imageData.data[0].url;
+
+      // Download the image
+      const imageDownloadResponse = await fetch(imageUrl);
+      if (!imageDownloadResponse.ok) {
+        throw new Error('Failed to download image');
+      }
+
+      // Convert the image to a blob
+      const imageBlob = await imageDownloadResponse.blob();
+
+      // Generate a unique filename
+      const filename = `${crypto.randomUUID()}.png`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('comic_panels')
+        .upload(filename, imageBlob, {
+          contentType: 'image/png',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw new Error(`Failed to upload image: ${uploadError.message}`);
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('comic_panels')
+        .getPublicUrl(filename);
+
       return {
         ...scene,
-        image_url: imageData.data[0].url,
+        image_url: publicUrl,
         sequence_number: index + 1
       }
     })
