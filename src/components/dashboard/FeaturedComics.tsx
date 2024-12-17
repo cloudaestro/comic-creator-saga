@@ -10,7 +10,7 @@ const fetchPublicComics = async () => {
     .select(`
       *,
       panels (*),
-      profiles:user_id (
+      profiles (
         username,
         avatar_url
       )
