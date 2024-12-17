@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { UserProfile } from "@/components/dashboard/UserProfile";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ComicCard } from "@/components/dashboard/ComicCard";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { ComicGrid } from "@/components/dashboard/ComicGrid";
+import { ComicViewer } from "@/components/dashboard/ComicViewer";
 
 interface Panel {
   id: string;
@@ -32,7 +28,6 @@ const Dashboard = () => {
   const [selectedComic, setSelectedComic] = useState<Comic | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   const fetchComics = async () => {
@@ -122,69 +117,21 @@ const Dashboard = () => {
 
         <main className="flex-1 overflow-auto">
           <div className="container mx-auto py-8">
-            <div className="mb-8 flex items-center justify-between">
-              <div className="space-y-1">
-                <h1 className="text-4xl font-bold tracking-tight">My Comics</h1>
-                <p className="text-lg text-muted-foreground">
-                  Create and manage your comic collection
-                </p>
-              </div>
-              <Button onClick={() => navigate("/create")} size="lg" className="gap-2">
-                <PlusCircle className="h-5 w-5" />
-                Create New Comic
-              </Button>
-            </div>
-
-            {isLoading ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-[300px] rounded-lg bg-muted animate-pulse" />
-                ))}
-              </div>
-            ) : comics.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {comics.map((comic) => (
-                  <ComicCard
-                    key={comic.id}
-                    comic={comic}
-                    onView={handleViewComic}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState />
-            )}
+            <DashboardHeader />
+            <ComicGrid
+              comics={comics}
+              isLoading={isLoading}
+              onViewComic={handleViewComic}
+              onDeleteComic={handleDelete}
+            />
           </div>
         </main>
 
-        <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>{selectedComic?.title}</DialogTitle>
-            </DialogHeader>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-8">
-                {selectedComic?.panels.map((panel) => (
-                  <div key={panel.id} className="space-y-2 animate-fade-in">
-                    <div className="overflow-hidden rounded-lg">
-                      <img
-                        src={panel.image_url}
-                        alt={`Panel ${panel.sequence_number}`}
-                        className="w-full object-cover shadow-lg transition-transform hover:scale-105"
-                      />
-                    </div>
-                    {panel.text_content && (
-                      <p className="text-center text-sm text-muted-foreground">
-                        {panel.text_content}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
+        <ComicViewer
+          comic={selectedComic}
+          isOpen={isViewerOpen}
+          onOpenChange={setIsViewerOpen}
+        />
       </div>
     </SidebarProvider>
   );
