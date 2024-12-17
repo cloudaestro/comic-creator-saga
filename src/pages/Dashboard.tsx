@@ -7,21 +7,7 @@ import { UserProfile } from "@/components/dashboard/UserProfile";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ComicGrid } from "@/components/dashboard/ComicGrid";
 import { ComicViewer } from "@/components/dashboard/ComicViewer";
-
-interface Panel {
-  id: string;
-  image_url: string;
-  sequence_number: number;
-  text_content: string | null;
-}
-
-interface Comic {
-  id: string;
-  title: string;
-  description: string;
-  created_at: string;
-  panels: Panel[];
-}
+import { Comic } from "@/types/comic";
 
 const Dashboard = () => {
   const [comics, setComics] = useState<Comic[]>([]);

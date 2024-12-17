@@ -1,22 +1,6 @@
 import { ComicCard } from "./ComicCard";
 import { EmptyState } from "./EmptyState";
-
-interface Panel {
-  id: string;
-  image_url: string;
-  sequence_number: number;
-  text_content: string | null;
-}
-
-interface Comic {
-  id: string;
-  title: string;
-  description: string;
-  created_at: string;
-  is_public: boolean;
-  user_id: string;
-  panels: Panel[];
-}
+import { Comic } from "@/types/comic";
 
 interface ComicGridProps {
   comics: Comic[];
