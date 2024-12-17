@@ -1,4 +1,4 @@
-import { Book, Clock, Edit, Trash2 } from "lucide-react";
+import { Book, Clock, Edit, Trash2, Lock, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ interface Comic {
   title: string;
   description: string;
   created_at: string;
+  is_public: boolean;
   panels: Panel[];
 }
 
@@ -38,9 +39,16 @@ export const ComicCard = ({ comic, onView, onDelete }: ComicCardProps) => {
       onClick={() => onView(comic)}
     >
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Book className="h-5 w-5 text-primary" />
-          {comic.title}
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Book className="h-5 w-5 text-primary" />
+            {comic.title}
+          </span>
+          {comic.is_public ? (
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          )}
         </CardTitle>
         <CardDescription>{comic.description}</CardDescription>
       </CardHeader>
