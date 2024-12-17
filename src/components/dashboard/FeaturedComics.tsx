@@ -9,12 +9,17 @@ const fetchPublicComics = async () => {
     .from("comics")
     .select(`
       *,
-      panels (*)
+      panels (*),
+      profiles:user_id (
+        username,
+        avatar_url
+      )
     `)
     .eq('is_public', true)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
+  console.log('Fetched public comics:', data); // Added for debugging
   return data as Comic[];
 };
 
@@ -54,6 +59,8 @@ export const FeaturedComics = () => {
       </div>
     );
   }
+
+  console.log('Rendering comics:', comics); // Added for debugging
 
   return (
     <div className="space-y-4">
